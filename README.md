@@ -61,4 +61,6 @@ Test accuracy (%) with ground-truth joints, mean and standard deviation over thr
 |---|---|---|---|---|---|---|---|---|
 | Pose (ST-GCN) | 88.4 (0.6) | 91.1 (0.1) | 93.1 (0.2) | 94.0 (0.3) | 96.3 (0.3) | 97.7 (0.2) | 97.4 (0.1) | 94.0 (0.2) |
 
-The checkpoint used for fusion is seed 2 (`pose_bbox_s2_best.pt`, val mean 94.86%, feature dimension 256). It is shared together with its prediction CSVs and the pooled features for every (video, ratio) of train/val/test (`features_{split}.pt` with `sample_id`, `ratio`, `label`, `features`).
+### Trained pose model weights
+
+Our checkpoints, prediction CSVs and pooled features are available in [pose_results.tar](https://cmu.box.com/s/come21aqa8wrw0nr2seolgb4g9sx2frc). Extract it in the project root to get `runs/pose/bbox_s0`, `bbox_s1` and `bbox_s2`. The checkpoint used for fusion is `runs/pose/bbox_s2/best.pt` (val mean 94.86%, feature dimension 256). The same folder has `features_{train,val,test}.pt` with the pooled features for every (video, ratio) (`sample_id`, `ratio`, `label`, `features`).
