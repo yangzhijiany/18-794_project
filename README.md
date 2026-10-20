@@ -74,16 +74,19 @@ python -m Fusion.train_fusion train --rgb-dir rgb_results/runs --output runs/fus
 python -m Fusion.train_fusion test --rgb-dir rgb_results/runs --checkpoint runs/fusion/matched_s0/best.pt
 ```
 
-For the ablation, use `--mode shuffled` with a new output directory to pair pose with another video at the same ratio. Weighted probability fusion searches RGB weights from 0 to 1 in steps of 0.1 on validation, selecting 0.5 for all test ratios.
+The observation ratio is the fraction of the video prefix available to both encoders. We evaluate the same fusion head at each ratio. For the ablation, use `--mode shuffled` with a new output directory to pair pose with another video at the same ratio.
 
-Mean test accuracy over seven observation ratios (GT pose, seed 0):
+Test accuracy (%) at seven observation ratios (GT pose; fusion seed 0, pose baseline `bbox_s2`):
 
-| Method | Accuracy (%) |
-|---|---|
-| Feature fusion | 96.82 |
-| Shuffled pose | 89.85 |
-| Weighted probabilities | 96.11 |
+| Method | 10% | 20% | 30% | 40% | 60% | 80% | 100% | Mean | nAUC |
+|---|---|---|---|---|---|---|---|---|---|
+| RGB | 81.84 | 88.30 | 90.73 | 91.95 | 93.45 | 94.29 | 94.94 | 90.78 | 0.9203 |
+| Pose | 89.04 | 91.10 | 92.88 | 94.38 | 96.63 | 97.75 | 97.47 | 94.18 | 0.9515 |
+| Feature fusion | 93.73 | 95.13 | 96.72 | 96.63 | 98.13 | 98.69 | 98.69 | 96.82 | 0.9733 |
+| Shuffled pose | 80.62 | 87.64 | 90.17 | 90.82 | 92.79 | 93.16 | 93.73 | 89.85 | 0.9111 |
+
+nAUC is the trapezoidal area over 10%-100%, divided by 0.9, with accuracy on a 0-1 scale. The original five-ratio proposal results are also saved in `auc.csv`. Run `python -m Fusion.analyze_fusion` to generate the curve, 10%/20% confusion matrices, class analysis and observed-prefix frame examples in `runs/fusion_analysis_rerun/`.
 
 ### Trained fusion model weights
 
-Download [fusion_results.tar](https://cmu.box.com/s/4bbn2uypfp1ugntr565cmht59h3xk5zq) for checkpoints, configs, predictions and analysis CSVs. Extract it in the project root; the feature fusion checkpoint is `runs/fusion/matched_s0_rerun/best.pt`.
+Download [fusion_results.tar](https://cmu.box.com/s/t31mw8ybixp1jqjzpdvz89n6v6egxy5e) for checkpoints, configs, predictions and analysis CSVs. Extract it in the project root; the feature fusion checkpoint is `runs/fusion/matched_s0_rerun/best.pt`.

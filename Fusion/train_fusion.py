@@ -219,8 +219,6 @@ def compare(args):
         return keyed
     sources = {'rgb': read(args.rgb), 'pose': read(args.pose),
                'matched': read(args.matched), 'shuffled': read(args.shuffled)}
-    if getattr(args, 'score_fusion', None):
-        sources['score_fusion'] = read(args.score_fusion)
     keys = set(sources['rgb'])
     if not all(set(d) == keys for d in sources.values()):
         raise ValueError('Prediction files have different sample keys')
@@ -302,7 +300,6 @@ def main():
     s = sub.add_parser('compare')
     for name in ('rgb', 'pose', 'matched', 'shuffled'):
         s.add_argument(f'--{name}', required=True)
-    s.add_argument('--score-fusion', help='Weighted probability fusion predictions')
     s.add_argument('--output', default='runs/fusion_analysis')
     args = p.parse_args()
     if hasattr(args, 'threads'):
