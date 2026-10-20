@@ -64,3 +64,41 @@ Test accuracy (%) with ground-truth joints, mean and standard deviation over thr
 ### Trained pose model weights
 
 Our checkpoints, prediction CSVs and pooled features are available in [pose_results.tar](https://cmu.box.com/s/come21aqa8wrw0nr2seolgb4g9sx2frc). Extract it in the project root to get `runs/pose/bbox_s0`, `bbox_s1` and `bbox_s2`. The checkpoint used for fusion is `runs/pose/bbox_s2/best.pt` (val mean 94.86%, feature dimension 256). The same folder has `features_{train,val,test}.pt` with the pooled features for every (video, ratio) (`sample_id`, `ratio`, `label`, `features`).
+
+## Fusion
+
+We freeze both encoders and use cached RGB (2048-d) and pose (256-d) features. Each branch is L2-normalized before concatenation, followed by FC(2304, 256), ReLU and a 15-class classifier. Code is in `Fusion/`.
+
+### Training and evaluation
+
+Training uses AdamW for 100 epochs, batch size 64, learning rate 0.001 and weight decay 0.0001. We select the checkpoint by mean validation accuracy over seven observation ratios.
+
+```bash
+python -m Fusion.train_fusion train --rgb-dir rgb_results/runs --output runs/fusion/matched_s0 --seed 0
+python -m Fusion.train_fusion test --rgb-dir rgb_results/runs --checkpoint runs/fusion/matched_s0/best.pt
+```
+
+For the ablation, add `--mode shuffled` and choose a new output directory. Pose features are paired with a different video at the same ratio within each split, with the same training settings.
+
+We also compare weighted probabilities: `alpha * RGB + (1 - alpha) * pose`. We search alpha from 0 to 1 in steps of 0.1 on validation and apply one fixed weight to all test ratios. Validation selects alpha = 0.5. This baseline requires no training.
+
+```bash
+python -m Fusion.rgb_baseline --rgb-dir rgb_results/runs --checkpoint rgb_results/runs/rgb_finetune/finetune_experiment_1/best.pt --split val
+python -m Fusion.score_fusion
+```
+
+### Results
+
+Test accuracy (%) with ground-truth pose, seed 0:
+
+| Model | 10% | 20% | 30% | 40% | 60% | 80% | 100% | Mean |
+|---|---|---|---|---|---|---|---|---|
+| Fusion | 93.73 | 95.13 | 96.72 | 96.63 | 98.13 | 98.69 | 98.69 | 96.82 |
+| Fusion (shuffled pose) | 80.62 | 87.64 | 90.17 | 90.82 | 92.79 | 93.16 | 93.73 | 89.85 |
+| Weighted probabilities | 92.13 | 94.10 | 95.41 | 96.25 | 97.75 | 98.50 | 98.60 | 96.11 |
+
+Mean RGB and pose (`bbox_s2`) accuracies are 90.78% and 94.18%, respectively.
+
+### Trained fusion model weights
+
+Our fusion checkpoints, configs, training histories, predictions and class analysis CSVs are available in [fusion_results.tar](https://cmu.box.com/s/4bbn2uypfp1ugntr565cmht59h3xk5zq). Extract it in the project root. The matched checkpoint is `runs/fusion/matched_s0_rerun/best.pt`; the shuffled checkpoint is in `runs/fusion/shuffled_s0_rerun/`. Analysis files are in `runs/fusion_analysis_rerun/`.

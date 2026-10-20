@@ -1,4 +1,11 @@
 data/
 .DS_Store
 __pycache__/
+.venv/
+.venv-gpu/
 runs/
+rgb_results.tar
+pose_results.tar
+fusion_results.tar
+aws_rgb_upload.tar.gz
+rgb_results/
