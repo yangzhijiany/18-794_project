@@ -1,16 +1,52 @@
 # 18-794_project
 
-
-
 ## RGB
 
-### Trained RGB model weights
+We use a ResNet-50 backbone with Gate-Shift-Fuse (GSF) modules for RGB action recognition. For each observation ratio, the model samples 16 frames from the observed part of a video and predicts one of the 15 Penn Action classes. The RGB code is in `RGB/`.
 
-Our classifier and fine-tuned model checkpoints are available in [rgb_results.tar](https://cmu.box.com/s/5ekkve7t6nt1pkzr5fufjczmavwbuq9v).
+### Pretrained weights
 
-### Pretrained ResNet-50 + GSF weights
+Before training, download the [16-frame ResNet-50 + GSF checkpoint](https://drive.google.com/file/d/1nSjhYvsu56e7a9d9VasGo7bxOrJ5j05f/view?usp=sharing) provided by the [GSF authors](https://github.com/swathikirans/GSF). From the project root, save it with the filename expected by our training code:
 
-Download the [16-frame ResNet-50 + GSF checkpoint](https://drive.google.com/file/d/1nSjhYvsu56e7a9d9VasGo7bxOrJ5j05f/view?usp=sharing) provided by the [GSF authors](https://github.com/swathikirans/GSF). Save it as `something-v1_resnet50_16frames.pth.tar` in the project root to train the RGB model.
+```bash
+python -m pip install gdown
+gdown 'https://drive.google.com/file/d/1nSjhYvsu56e7a9d9VasGo7bxOrJ5j05f/view?usp=sharing' -O something-v1_resnet50_16frames.pth.tar
+```
+
+### Training and evaluation
+
+Training is run in JupyterLab using `RGB/training.ipynb`, rather than through a command-line training script. Set the project path in the notebook's first cell, then run the classifier training section followed by the fine-tuning section. Their main calls are:
+
+```python
+classifier_best = train_classifier(**classifier_config)
+finetune_best = fine_tune_rgb(**finetune_config)
+```
+
+First, we freeze the pretrained backbone and train the new 15-class classifier for 8 epochs. We then load the best classifier checkpoint, unfreeze the backbone, and fine-tune the whole model for 12 epochs. Both stages use AdamW, batch size 4, and weight decay `1e-4`. The classifier stage uses learning rate `1e-3`; fine-tuning uses `1e-5` for the backbone and `1e-4` for the classifier. We select the best checkpoint in each stage by mean validation accuracy across the seven observation ratios.
+
+The later notebook sections evaluate both checkpoints on the test set and extract train, validation, and test features from the fine-tuned model. To repeat training, choose new experiment names in the notebook because the training code does not overwrite an existing run.
+
+### Test results
+
+Test accuracy (%) on Penn Action:
+
+| Model | 10% | 20% | 30% | 40% | 60% | 80% | 100% | Mean |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Frozen backbone | 40.07 | 61.24 | 67.04 | 69.38 | 72.75 | 76.97 | 74.16 | 65.94 |
+| Full fine-tuning | 81.84 | 88.30 | 90.73 | 91.95 | 93.45 | 94.29 | 94.94 | 90.78 |
+
+Full fine-tuning raises the mean accuracy from 65.94% to 90.78%. At 10% observation, accuracy rises from 40.07% to 81.84%; the fine-tuned model exceeds 90% accuracy from 30% observation onward.
+
+### Trained checkpoints and RGB features
+
+Download [rgb_results.tar](https://cmu.box.com/s/5ekkve7t6nt1pkzr5fufjczmavwbuq9v). To use it with the Fusion commands below, download the file to the project root and extract it under `rgb_results/`:
+
+```bash
+mkdir -p rgb_results
+tar -xf rgb_results.tar -C rgb_results
+```
+
+The two checkpoints are `rgb_results/runs/rgb_classifier/classifier_experiment_1/best.pt` and `rgb_results/runs/rgb_finetune/finetune_experiment_1/best.pt`. The fine-tuning folder also contains `features_train.pt`, `features_val.pt`, and `features_test.pt`. These files contain a 2,048-dimensional RGB feature for each video and observation ratio, together with its video ID, ratio, and label.
 
 ## Pose
 
